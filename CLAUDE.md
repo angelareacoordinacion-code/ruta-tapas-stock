@@ -53,12 +53,31 @@ icons/
   icon-192.png   - icono manifest (Android/Chrome), mismo diseño
 ```
 
-## Datos maestros (PRODUCTS)
+## Datos maestros (productos)
 
-44 productos con `{id, nombre, precio, stockObjetivo}`, extraídos del Excel
-original de la empresa (`Material_tapas_reorganizado.xlsx`, generado en la
-misma sesión). Están hardcodeados en `app.js` y `admin.js` — si se añaden/quitan
-productos, hay que editar **ambos** ficheros igual.
+Desde 2026-08-25 la lista de productos **ya no está hardcodeada**: vive en
+Firestore, dentro de `state.products` (mismo documento `rutatapas/state`,
+junto a `stock` e `historial`). Se edita desde el backoffice
+(`admin.html` → sección "Gestión de productos"): añadir producto nuevo,
+cambiar nombre/precio/stock objetivo, o eliminar uno (eliminar no borra su
+rastro en el historial — aparece como "(producto eliminado)").
+
+`app.js` y `admin.js` siguen teniendo un array `SEED_PRODUCTS` (44 productos,
+extraídos del Excel original `Material_tapas_reorganizado.xlsx`) — ya **no**
+es la fuente de verdad, solo la semilla inicial para crear `state.products`
+la primera vez, o red de seguridad (`ensureProducts()`) si algún día la nube
+tiene un documento sin ese campo. Los IDs de producto nuevos se asignan como
+`max(id existente) + 1`.
+
+## Otras funciones añadidas (2026-08-25)
+
+- **Exportar a CSV**: botón "⤓ Exportar a hoja de cálculo (CSV)" en Stock,
+  Lista de compra, detalle de un evento del Historial, y en la pestaña
+  Resumen (general y por evento). Usa `downloadCSV()` en `app.js` — separador
+  `;` y BOM UTF-8 para que Excel en español lo abra bien.
+- **Pestaña "Resumen"** (5ª pestaña, `viewResumen()` en `app.js`): ranking de
+  productos más gastados, en general (todos los eventos) y filtrable por
+  evento concreto, con barras proporcionales.
 
 ## Lecciones aprendidas (evitar repetir errores)
 

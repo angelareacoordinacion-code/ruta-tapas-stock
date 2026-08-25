@@ -1,5 +1,8 @@
-/* ============ DATOS MAESTROS (del histórico "Material tapas") ============ */
-const PRODUCTS = [{"id":0,"nombre":"Pincho Pollo","precio":0.9196,"stockObjetivo":12},{"id":1,"nombre":"Pincho Gambas","precio":0.999,"stockObjetivo":24},{"id":2,"nombre":"Calamares","precio":0.114,"stockObjetivo":7.14},{"id":3,"nombre":"Muslitos cangrejo","precio":0.1809375,"stockObjetivo":7.81},{"id":4,"nombre":"Gambas Torpedo","precio":null,"stockObjetivo":0},{"id":5,"nombre":"Jamon","precio":0.425,"stockObjetivo":3.2},{"id":6,"nombre":"Queso","precio":0.3398,"stockObjetivo":5},{"id":7,"nombre":"Datiles Beicon","precio":0.3108,"stockObjetivo":0},{"id":8,"nombre":"Croquetas jamon","precio":null,"stockObjetivo":0},{"id":9,"nombre":"Patata","precio":0.5271,"stockObjetivo":42},{"id":10,"nombre":"Olivas con pimiento","precio":0.0598,"stockObjetivo":3},{"id":11,"nombre":"Pan tostado","precio":null,"stockObjetivo":2},{"id":12,"nombre":"Coleslaw Americana","precio":0.5495,"stockObjetivo":3},{"id":13,"nombre":"Limones","precio":0.0497,"stockObjetivo":6.67},{"id":14,"nombre":"Remoulade","precio":0.0187,"stockObjetivo":2},{"id":15,"nombre":"Mayonesa","precio":0.0187,"stockObjetivo":3.75},{"id":16,"nombre":"Ketchup","precio":0.0187,"stockObjetivo":6},{"id":17,"nombre":"Chilisauce","precio":0.0468,"stockObjetivo":1},{"id":18,"nombre":"Aioli","precio":0.2398,"stockObjetivo":3},{"id":19,"nombre":"Leche","precio":0.25,"stockObjetivo":9},{"id":20,"nombre":"petesilie congelado","precio":null,"stockObjetivo":0},{"id":21,"nombre":"ajo congelado","precio":null,"stockObjetivo":0},{"id":22,"nombre":"Ajos","precio":0.0199,"stockObjetivo":3},{"id":23,"nombre":"aceite rapsol","precio":null,"stockObjetivo":4},{"id":24,"nombre":"Aceite Freir Girasol","precio":0.9295,"stockObjetivo":12},{"id":25,"nombre":"Aceite oliva","precio":0.1338,"stockObjetivo":2},{"id":26,"nombre":"Mantequilla plancha","precio":0.0012,"stockObjetivo":1},{"id":27,"nombre":"Sal","precio":0.0038,"stockObjetivo":1},{"id":28,"nombre":"vinagre","precio":0.005,"stockObjetivo":1},{"id":29,"nombre":"Paprica schüs","precio":null,"stockObjetivo":1},{"id":30,"nombre":"Paprica Sarf","precio":null,"stockObjetivo":2},{"id":31,"nombre":"Plato schale","precio":0.092,"stockObjetivo":500},{"id":32,"nombre":"Plato Tapa","precio":0.0598,"stockObjetivo":350},{"id":33,"nombre":"Plato Combioval","precio":0.1058,"stockObjetivo":300},{"id":34,"nombre":"Plato Fiesta","precio":0.2198,"stockObjetivo":50},{"id":35,"nombre":"Platito salsas","precio":0.0619,"stockObjetivo":200},{"id":36,"nombre":"Platito olivas","precio":0.0549,"stockObjetivo":200},{"id":37,"nombre":"Tenedores","precio":0.0115,"stockObjetivo":300},{"id":38,"nombre":"Cuchillos","precio":0.0115,"stockObjetivo":300},{"id":39,"nombre":"servilletas","precio":null,"stockObjetivo":500},{"id":40,"nombre":"servilletas rollo","precio":null,"stockObjetivo":8},{"id":41,"nombre":"palillos","precio":0.0009,"stockObjetivo":1},{"id":42,"nombre":"ALU (papel Alu)","precio":0.027,"stockObjetivo":8},{"id":43,"nombre":"ensalada","precio":null,"stockObjetivo":0}];
+/* ============ DATOS MAESTROS (semilla inicial, del histórico "Material tapas") ============
+   A partir de aquí la lista real de productos vive en Firestore (state.products),
+   editable desde el backoffice. Este array solo se usa para crear el estado
+   inicial la primera vez, o si por lo que sea la nube no tiene productos. */
+const SEED_PRODUCTS = [{"id":0,"nombre":"Pincho Pollo","precio":0.9196,"stockObjetivo":12},{"id":1,"nombre":"Pincho Gambas","precio":0.999,"stockObjetivo":24},{"id":2,"nombre":"Calamares","precio":0.114,"stockObjetivo":7.14},{"id":3,"nombre":"Muslitos cangrejo","precio":0.1809375,"stockObjetivo":7.81},{"id":4,"nombre":"Gambas Torpedo","precio":null,"stockObjetivo":0},{"id":5,"nombre":"Jamon","precio":0.425,"stockObjetivo":3.2},{"id":6,"nombre":"Queso","precio":0.3398,"stockObjetivo":5},{"id":7,"nombre":"Datiles Beicon","precio":0.3108,"stockObjetivo":0},{"id":8,"nombre":"Croquetas jamon","precio":null,"stockObjetivo":0},{"id":9,"nombre":"Patata","precio":0.5271,"stockObjetivo":42},{"id":10,"nombre":"Olivas con pimiento","precio":0.0598,"stockObjetivo":3},{"id":11,"nombre":"Pan tostado","precio":null,"stockObjetivo":2},{"id":12,"nombre":"Coleslaw Americana","precio":0.5495,"stockObjetivo":3},{"id":13,"nombre":"Limones","precio":0.0497,"stockObjetivo":6.67},{"id":14,"nombre":"Remoulade","precio":0.0187,"stockObjetivo":2},{"id":15,"nombre":"Mayonesa","precio":0.0187,"stockObjetivo":3.75},{"id":16,"nombre":"Ketchup","precio":0.0187,"stockObjetivo":6},{"id":17,"nombre":"Chilisauce","precio":0.0468,"stockObjetivo":1},{"id":18,"nombre":"Aioli","precio":0.2398,"stockObjetivo":3},{"id":19,"nombre":"Leche","precio":0.25,"stockObjetivo":9},{"id":20,"nombre":"petesilie congelado","precio":null,"stockObjetivo":0},{"id":21,"nombre":"ajo congelado","precio":null,"stockObjetivo":0},{"id":22,"nombre":"Ajos","precio":0.0199,"stockObjetivo":3},{"id":23,"nombre":"aceite rapsol","precio":null,"stockObjetivo":4},{"id":24,"nombre":"Aceite Freir Girasol","precio":0.9295,"stockObjetivo":12},{"id":25,"nombre":"Aceite oliva","precio":0.1338,"stockObjetivo":2},{"id":26,"nombre":"Mantequilla plancha","precio":0.0012,"stockObjetivo":1},{"id":27,"nombre":"Sal","precio":0.0038,"stockObjetivo":1},{"id":28,"nombre":"vinagre","precio":0.005,"stockObjetivo":1},{"id":29,"nombre":"Paprica schüs","precio":null,"stockObjetivo":1},{"id":30,"nombre":"Paprica Sarf","precio":null,"stockObjetivo":2},{"id":31,"nombre":"Plato schale","precio":0.092,"stockObjetivo":500},{"id":32,"nombre":"Plato Tapa","precio":0.0598,"stockObjetivo":350},{"id":33,"nombre":"Plato Combioval","precio":0.1058,"stockObjetivo":300},{"id":34,"nombre":"Plato Fiesta","precio":0.2198,"stockObjetivo":50},{"id":35,"nombre":"Platito salsas","precio":0.0619,"stockObjetivo":200},{"id":36,"nombre":"Platito olivas","precio":0.0549,"stockObjetivo":200},{"id":37,"nombre":"Tenedores","precio":0.0115,"stockObjetivo":300},{"id":38,"nombre":"Cuchillos","precio":0.0115,"stockObjetivo":300},{"id":39,"nombre":"servilletas","precio":null,"stockObjetivo":500},{"id":40,"nombre":"servilletas rollo","precio":null,"stockObjetivo":8},{"id":41,"nombre":"palillos","precio":0.0009,"stockObjetivo":1},{"id":42,"nombre":"ALU (papel Alu)","precio":0.027,"stockObjetivo":8},{"id":43,"nombre":"ensalada","precio":null,"stockObjetivo":0}];
 
 /* ============ FIREBASE ============ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -23,14 +26,31 @@ const CLIENT_ID = (localStorage.getItem('rutatapas_client') ||
 
 /* ============ ESTADO (local + nube) ============ */
 function defaultState(){
+  const products = SEED_PRODUCTS.map(p=>({...p}));
   const stock = {};
-  PRODUCTS.forEach(p => stock[p.id] = p.stockObjetivo);
-  return { stock, historial: [] };
+  products.forEach(p => stock[p.id] = p.stockObjetivo);
+  return { products, stock, historial: [] };
+}
+// Rellena state.products si falta (datos antiguos) y crea entradas de stock
+// para cualquier producto nuevo que todavía no tenga una. Se llama siempre
+// que el estado se reemplaza entero (carga local, nube, tiempo real).
+function ensureProducts(s){
+  if(!s.products || !Array.isArray(s.products) || s.products.length===0){
+    s.products = SEED_PRODUCTS.map(p=>({...p}));
+  }
+  if(!s.stock) s.stock = {};
+  s.products.forEach(p=>{
+    if(s.stock[p.id] === undefined) s.stock[p.id] = p.stockObjetivo;
+  });
+  return s;
+}
+function findProduct(products, id){
+  return products.find(p=>p.id===id) || { id, nombre:'(producto eliminado)', precio:null, stockObjetivo:0 };
 }
 function loadLocalState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw) return ensureProducts(JSON.parse(raw));
   }catch(e){}
   return defaultState();
 }
@@ -68,7 +88,7 @@ onSnapshot(STATE_DOC,
     // evita re-procesar el eco de nuestra propia escritura reciente
     if(data.from === CLIENT_ID && Date.now() - lastWriteFromThisTab < 4000) return;
     const remote = JSON.parse(data.json);
-    state = remote;
+    state = ensureProducts(remote);
     saveLocalState();
     updateHeader();
     render();
@@ -88,7 +108,7 @@ async function syncFromCloud(showToast){
   }
   cloudConnected = true;
   if(res.state){
-    state = res.state;
+    state = ensureProducts(res.state);
     saveLocalState();
   } else {
     await pushRemoteState(state);
@@ -121,6 +141,20 @@ function toast(msg){
 function lastEvent(){
   return state.historial[state.historial.length-1] || null;
 }
+// Exporta filas (array de arrays) a un CSV descargable, compatible con Excel
+// (BOM UTF-8 + separador ";" porque Excel en español usa coma decimal).
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(cell=>{
+    const s = (cell===null || cell===undefined) ? '' : String(cell);
+    return /[";\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(';')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 function updateHeader(){
   const le = lastEvent();
   document.getElementById('lastEventLabel').textContent = le
@@ -132,6 +166,7 @@ function updateHeader(){
 let eventoDraft = {}; // {productId: vuelta}
 
 function viewEvento(){
+  const PRODUCTS = state.products;
   const el = document.createElement('div');
   el.innerHTML = `
     <h1 class="view-title">Nuevo evento</h1>
@@ -197,10 +232,11 @@ function viewEvento(){
     // ha guardado algo mientras teníamos esta pantalla abierta.
     const fresh = await fetchRemoteState();
     if(fresh.ok && fresh.state){
-      state = fresh.state;
+      state = ensureProducts(fresh.state);
       saveLocalState();
     }
 
+    const PRODUCTS = state.products;
     const items = Object.entries(eventoDraft).map(([id, vuelta])=>{
       id = parseInt(id);
       const stockInicio = state.stock[id] !== undefined ? state.stock[id] : (PRODUCTS.find(p=>p.id===id)||{}).stockObjetivo;
@@ -229,6 +265,7 @@ function viewEvento(){
 
 /* ============ VISTA: LISTA DE COMPRA ============ */
 function viewCompra(){
+  const PRODUCTS = state.products;
   const el = document.createElement('div');
   const evts = state.historial;
   el.innerHTML = `
@@ -256,7 +293,7 @@ function viewCompra(){
     const evt = evts.find(e => e.id == evtId);
     const withNeed = evt.items.filter(it => it.compraNecesaria > 0);
     let lines = withNeed.map(it=>{
-      const p = PRODUCTS.find(pp=>pp.id===it.productId);
+      const p = findProduct(PRODUCTS, it.productId);
       const cost = p.precio!=null ? p.precio*it.compraNecesaria : null;
       return {name:p.nombre, qty:it.compraNecesaria, cost};
     });
@@ -273,7 +310,17 @@ function viewCompra(){
         ${lines.length>0 ? `<div class="receipt-total"><span>TOTAL${hasUnknownPrice?' *':''}</span><span>${fmtEUR(total)}</span></div>` : ''}
         ${hasUnknownPrice ? `<div class="receipt-sub" style="margin-top:6px;">* hay productos sin precio guardado, no entran en el total</div>` : ''}
       </div>
+      ${lines.length>0 ? `<button class="btn btn-secondary btn-block" id="exportCompraBtn" style="margin-top:12px;">⤓ Exportar a hoja de cálculo (CSV)</button>` : ''}
     `;
+    const exportBtn = receiptWrap.querySelector('#exportCompraBtn');
+    if(exportBtn){
+      exportBtn.addEventListener('click', ()=>{
+        const rows = [['Producto','Cantidad a comprar','Coste estimado (EUR)']];
+        lines.forEach(l => rows.push([l.name, fmt(l.qty), l.cost!=null ? fmt(l.cost) : '']));
+        rows.push(['TOTAL','', fmt(total)]);
+        downloadCSV(`lista-compra-${evt.evento}-${evt.fecha}.csv`, rows);
+      });
+    }
   }
   renderReceipt(sel.value);
   sel.addEventListener('change', ()=> renderReceipt(sel.value));
@@ -282,6 +329,7 @@ function viewCompra(){
 
 /* ============ VISTA: STOCK ACTUAL ============ */
 function viewStock(){
+  const PRODUCTS = state.products;
   const el = document.createElement('div');
   el.innerHTML = `
     <h1 class="view-title">Stock actual</h1>
@@ -291,9 +339,10 @@ function viewStock(){
       <div class="stock-head"><span>Producto</span><span style="text-align:right">Actual</span><span style="text-align:right">Objet.</span><span></span></div>
       <div id="stockRows"></div>
     </div>
+    <button class="btn btn-secondary btn-block" id="exportStockBtn">⤓ Exportar a hoja de cálculo (CSV)</button>
   `;
   const rows = el.querySelector('#stockRows');
-  function render(filter=''){
+  function renderRows(filter=''){
     rows.innerHTML = '';
     PRODUCTS.filter(p=>p.nombre.toLowerCase().includes(filter.toLowerCase())).forEach(p=>{
       const actual = state.stock[p.id];
@@ -309,13 +358,21 @@ function viewStock(){
       rows.appendChild(row);
     });
   }
-  render();
-  el.querySelector('#stockSearch').addEventListener('input', e=>render(e.target.value));
+  renderRows();
+  el.querySelector('#stockSearch').addEventListener('input', e=>renderRows(e.target.value));
+  el.querySelector('#exportStockBtn').addEventListener('click', ()=>{
+    const out = [['Producto','Stock actual','Stock objetivo','Precio (EUR)']];
+    PRODUCTS.forEach(p=>{
+      out.push([p.nombre, fmt(state.stock[p.id]), fmt(p.stockObjetivo), p.precio!=null ? fmt(p.precio) : '']);
+    });
+    downloadCSV(`stock-actual-${new Date().toISOString().slice(0,10)}.csv`, out);
+  });
   return el;
 }
 
 /* ============ VISTA: HISTORIAL ============ */
 function viewHistorial(){
+  const PRODUCTS = state.products;
   const el = document.createElement('div');
   if(historyDetailId !== null){
     const evt = state.historial.find(e=>e.id===historyDetailId);
@@ -324,7 +381,7 @@ function viewHistorial(){
       <p class="view-desc">${fmtDate(evt.fecha)}</p>
       <div class="card">
         ${evt.items.map(it=>{
-          const p = PRODUCTS.find(pp=>pp.id===it.productId);
+          const p = findProduct(PRODUCTS, it.productId);
           return `<div class="stock-row" style="grid-template-columns:1fr 55px 55px 55px;">
             <span class="stock-name">${p.nombre}</span>
             <span class="stock-num" title="vuelta">${fmt(it.vuelta)}</span>
@@ -335,8 +392,17 @@ function viewHistorial(){
         <div class="stock-head" style="margin-top:10px;border-top:1px solid var(--line);border-bottom:none;padding-top:8px;grid-template-columns:1fr 55px 55px 55px;">
           <span></span><span style="text-align:right">Vuelta</span><span style="text-align:right">Gastado</span><span style="text-align:right">Comprar</span>
         </div>
-      </div>`;
+      </div>
+      <button class="btn btn-secondary btn-block" id="exportEvtBtn">⤓ Exportar a hoja de cálculo (CSV)</button>`;
     el.querySelector('#backBtn').addEventListener('click', ()=>{ historyDetailId=null; render(); });
+    el.querySelector('#exportEvtBtn').addEventListener('click', ()=>{
+      const out = [['Producto','Vuelta','Gastado','Comprar']];
+      evt.items.forEach(it=>{
+        const p = findProduct(PRODUCTS, it.productId);
+        out.push([p.nombre, fmt(it.vuelta), fmt(it.gastado), fmt(it.compraNecesaria)]);
+      });
+      downloadCSV(`evento-${evt.evento}-${evt.fecha}.csv`, out);
+    });
     return el;
   }
   el.innerHTML = `<h1 class="view-title">Historial de eventos</h1><p class="view-desc">Todo lo que has ido registrando, del más reciente al más antiguo.</p>`;
@@ -356,8 +422,85 @@ function viewHistorial(){
   return el;
 }
 
+/* ============ VISTA: RESUMEN ============ */
+function viewResumen(){
+  const PRODUCTS = state.products;
+  const el = document.createElement('div');
+  el.innerHTML = `<h1 class="view-title">Resumen</h1><p class="view-desc">Los productos que más se gastan, en general y evento por evento.</p>`;
+  if(state.historial.length===0){
+    el.innerHTML += `<div class="empty-state"><span class="emoji">📊</span>Todavía no hay eventos guardados para hacer un resumen.</div>`;
+    return el;
+  }
+
+  function ranking(items){
+    const totals = {};
+    items.forEach(it=>{
+      totals[it.productId] = (totals[it.productId]||0) + it.gastado;
+    });
+    return Object.entries(totals)
+      .map(([id, gastado]) => ({ p: findProduct(PRODUCTS, parseInt(id)), gastado }))
+      .filter(r => r.gastado > 0)
+      .sort((a,b) => b.gastado - a.gastado);
+  }
+
+  function renderRanking(container, rows, exportName){
+    const max = rows.length ? rows[0].gastado : 0;
+    container.innerHTML = rows.length === 0
+      ? `<div class="receipt-empty">Sin consumo registrado.</div>`
+      : rows.map(r => `
+        <div class="rank-row">
+          <span class="rank-name">${r.p.nombre}</span>
+          <span class="rank-val">${fmt(r.gastado)}</span>
+        </div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${max ? (r.gastado/max*100) : 0}%"></div></div>
+      `).join('');
+    if(rows.length){
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-block';
+      btn.style.marginTop = '10px';
+      btn.textContent = '⤓ Exportar a hoja de cálculo (CSV)';
+      btn.addEventListener('click', ()=>{
+        const out = [['Producto','Total gastado']];
+        rows.forEach(r => out.push([r.p.nombre, fmt(r.gastado)]));
+        downloadCSV(exportName, out);
+      });
+      container.appendChild(btn);
+    }
+  }
+
+  // --- General (todos los eventos) ---
+  const allItems = state.historial.flatMap(e => e.items);
+  el.innerHTML += `<h2 class="rank-section-title">General — todos los eventos</h2><div class="card" id="rankGlobal"></div>`;
+
+  // --- Por evento ---
+  el.innerHTML += `<h2 class="rank-section-title">Por evento</h2>`;
+  const sel = document.createElement('select');
+  sel.className = 'evt-select';
+  state.historial.slice().reverse().forEach(e=>{
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = `${e.evento} · ${fmtDate(e.fecha)}`;
+    sel.appendChild(opt);
+  });
+  el.appendChild(sel);
+  const rankEvtWrap = document.createElement('div');
+  rankEvtWrap.className = 'card';
+  el.appendChild(rankEvtWrap);
+
+  renderRanking(el.querySelector('#rankGlobal'), ranking(allItems), `resumen-general-${new Date().toISOString().slice(0,10)}.csv`);
+  function renderEvt(evtId){
+    const evt = state.historial.find(e => e.id == evtId);
+    rankEvtWrap.innerHTML = '';
+    renderRanking(rankEvtWrap, ranking(evt.items), `resumen-${evt.evento}-${evt.fecha}.csv`);
+  }
+  renderEvt(sel.value);
+  sel.addEventListener('change', ()=> renderEvt(sel.value));
+
+  return el;
+}
+
 /* ============ ROUTER ============ */
-const VIEWS = { evento: viewEvento, compra: viewCompra, stock: viewStock, historial: viewHistorial };
+const VIEWS = { evento: viewEvento, compra: viewCompra, stock: viewStock, historial: viewHistorial, resumen: viewResumen };
 
 function render(){
   const app = document.getElementById('app');
