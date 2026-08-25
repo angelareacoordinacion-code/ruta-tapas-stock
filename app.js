@@ -91,7 +91,7 @@ onSnapshot(STATE_DOC,
     state = ensureProducts(remote);
     saveLocalState();
     updateHeader();
-    render();
+    renderUnlessEditingEvento();
   },
   (err) => {
     cloudConnected = false;
@@ -114,8 +114,19 @@ async function syncFromCloud(showToast){
     await pushRemoteState(state);
   }
   updateHeader();
-  render();
+  renderUnlessEditingEvento();
   if(showToast) toast('Sincronizado con la nube ☁️');
+}
+
+// Una sincronización de fondo (tiempo real o el respaldo cada 15s) no debe
+// redibujar la pantalla "Nuevo evento" mientras el usuario la está rellenando:
+// el redibujado perdería el foco/cursor del campo que esté escribiendo en
+// ese momento (los valores en sí ya sobreviven vía eventoDraft/eventoName/
+// eventoFecha, pero el redibujado sigue siendo una interrupción molesta).
+// El estado igualmente queda actualizado en memoria y se usará al guardar.
+function renderUnlessEditingEvento(){
+  if(currentView === 'evento') return;
+  render();
 }
 
 /* ============ UTILIDADES ============ */
@@ -164,6 +175,10 @@ function updateHeader(){
 
 /* ============ VISTA: NUEVO EVENTO ============ */
 let eventoDraft = {}; // {productId: vuelta}
+// Nombre/fecha del evento en curso, fuera del DOM para que sobrevivan a un
+// re-render provocado por una sincronización de fondo.
+let eventoName = '';
+let eventoFecha = new Date().toISOString().slice(0,10);
 
 function viewEvento(){
   const PRODUCTS = state.products;
@@ -175,11 +190,11 @@ function viewEvento(){
       <div class="field-row">
         <div>
           <label for="evtName">Ciudad / evento</label>
-          <input type="text" id="evtName" placeholder="p.ej. Weimar" autocomplete="off">
+          <input type="text" id="evtName" value="${eventoName}" placeholder="p.ej. Weimar" autocomplete="off">
         </div>
         <div>
           <label for="evtDate">Fecha</label>
-          <input type="text" id="evtDate" value="${new Date().toISOString().slice(0,10)}" placeholder="AAAA-MM-DD">
+          <input type="text" id="evtDate" value="${eventoFecha}" placeholder="AAAA-MM-DD">
         </div>
       </div>
     </div>
@@ -189,6 +204,8 @@ function viewEvento(){
     <div class="prod-list" id="prodList"></div>
     <button class="btn btn-primary btn-block" id="saveEventBtn" style="margin-top:16px;">Guardar evento y calcular stock</button>
   `;
+  el.querySelector('#evtName').addEventListener('input', e=>{ eventoName = e.target.value; });
+  el.querySelector('#evtDate').addEventListener('input', e=>{ eventoFecha = e.target.value; });
   const list = el.querySelector('#prodList');
   function renderList(filter=''){
     list.innerHTML = '';
@@ -252,6 +269,8 @@ function viewEvento(){
     });
     saveLocalState();
     eventoDraft = {};
+    eventoName = '';
+    eventoFecha = new Date().toISOString().slice(0,10);
     toast(`Evento "${nombre}" guardado ✓ sincronizando…`);
     updateHeader();
     render();
