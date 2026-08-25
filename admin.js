@@ -139,7 +139,11 @@ function renderApp(){
   /* ---- Gestión de productos ---- */
   const prodEdit = document.getElementById('prodEdit');
   function renderProdRows(){
-    prodEdit.innerHTML = '';
+    prodEdit.innerHTML = `
+      <div class="prod-edit-head">
+        <span>Producto</span><span>Precio €</span><span>Stock objetivo</span><span></span>
+      </div>
+    `;
     state.products.forEach(p=>{
       const row = document.createElement('div');
       row.className = 'prod-edit-row';

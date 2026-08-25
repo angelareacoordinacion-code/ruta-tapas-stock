@@ -256,9 +256,14 @@ function viewEvento(){
     const PRODUCTS = state.products;
     const items = Object.entries(eventoDraft).map(([id, vuelta])=>{
       id = parseInt(id);
-      const stockInicio = state.stock[id] !== undefined ? state.stock[id] : (PRODUCTS.find(p=>p.id===id)||{}).stockObjetivo;
+      const objetivo = (PRODUCTS.find(p=>p.id===id)||{}).stockObjetivo || 0;
+      const stockInicio = state.stock[id] !== undefined ? state.stock[id] : objetivo;
       const gastado = Math.max(stockInicio - vuelta, 0);
-      return { productId:id, stockInicio, vuelta, gastado, compraNecesaria: gastado };
+      // La compra siempre repone HASTA el stock objetivo (el mínimo que nunca
+      // debería faltar), no solo lo consumido — si ya se empezaba el evento
+      // por debajo del objetivo, hay que comprar también esa diferencia.
+      const compraNecesaria = Math.max(objetivo - vuelta, 0);
+      return { productId:id, stockInicio, vuelta, gastado, compraNecesaria };
     });
     items.forEach(it => { state.stock[it.productId] = it.vuelta; });
     state.historial.push({
