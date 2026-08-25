@@ -52,8 +52,10 @@ function toast(msg){
   toast._t = setTimeout(()=>t.classList.remove('show'), 2500);
 }
 
+let lastPushAt = 0;
 async function pushState(){
   try{
+    lastPushAt = Date.now();
     await setDoc(STATE_DOC, { json: JSON.stringify(state), updatedAt: Date.now(), from: 'admin' });
     toast('Guardado en la nube ☁️');
     return true;
@@ -165,6 +167,46 @@ function renderApp(){
   }
   renderProdRows();
 
+  const stockEdit = document.getElementById('stockEdit');
+  state.products.forEach(p=>{
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <div>
+        <div class="name">${p.nombre}</div>
+        <div class="diff">objetivo: ${p.stockObjetivo}</div>
+      </div>
+      <input type="number" step="0.5" data-id="${p.id}" value="${state.stock[p.id]}">
+    `;
+    stockEdit.appendChild(row);
+  });
+
+  // Lee TODOS los campos editables en pantalla (productos + stock actual) y
+  // los vuelca en `state`. Los dos botones de guardar ("Guardar cambios en
+  // productos" y la barra fija "Guardar cambios en stock") llaman a esto
+  // antes de subir a la nube, para que ninguno de los dos pise/descarte lo
+  // que se haya tocado en la otra sección.
+  function applyPendingEditsFromDOM(){
+    const rows = prodEdit.querySelectorAll('.prod-edit-row');
+    const updated = [];
+    rows.forEach(row=>{
+      const id = parseInt(row.dataset.id);
+      const nombre = row.querySelector('.pe-name').value.trim();
+      const precioRaw = row.querySelector('.pe-precio').value;
+      const precio = precioRaw.trim() === '' ? null : parseFloat(precioRaw);
+      const objetivoRaw = row.querySelector('.pe-objetivo').value;
+      const stockObjetivo = objetivoRaw.trim() === '' ? 0 : (parseFloat(objetivoRaw) || 0);
+      if(nombre) updated.push({ id, nombre, precio, stockObjetivo });
+    });
+    state.products = updated;
+
+    stockEdit.querySelectorAll('input').forEach(inp=>{
+      const id = parseInt(inp.dataset.id);
+      const v = parseFloat(inp.value);
+      state.stock[id] = isNaN(v) ? 0 : v;
+    });
+  }
+
   document.getElementById('addProdBtn').addEventListener('click', ()=>{
     const nameInp = document.getElementById('newProdName');
     const precioInp = document.getElementById('newProdPrecio');
@@ -182,34 +224,9 @@ function renderApp(){
   });
 
   document.getElementById('saveProdBtn').addEventListener('click', async ()=>{
-    const rows = prodEdit.querySelectorAll('.prod-edit-row');
-    const updated = [];
-    rows.forEach(row=>{
-      const id = parseInt(row.dataset.id);
-      const nombre = row.querySelector('.pe-name').value.trim();
-      const precioRaw = row.querySelector('.pe-precio').value;
-      const precio = precioRaw.trim() === '' ? null : parseFloat(precioRaw);
-      const objetivoRaw = row.querySelector('.pe-objetivo').value;
-      const stockObjetivo = objetivoRaw.trim() === '' ? 0 : (parseFloat(objetivoRaw) || 0);
-      if(nombre) updated.push({ id, nombre, precio, stockObjetivo });
-    });
-    state.products = updated;
+    applyPendingEditsFromDOM();
     const ok = await pushState();
     if(ok) renderApp();
-  });
-
-  const stockEdit = document.getElementById('stockEdit');
-  state.products.forEach(p=>{
-    const row = document.createElement('div');
-    row.className = 'edit-row';
-    row.innerHTML = `
-      <div>
-        <div class="name">${p.nombre}</div>
-        <div class="diff">objetivo: ${p.stockObjetivo}</div>
-      </div>
-      <input type="number" step="0.5" data-id="${p.id}" value="${state.stock[p.id]}">
-    `;
-    stockEdit.appendChild(row);
   });
 
   const histList = document.getElementById('histList');
@@ -253,12 +270,9 @@ function renderApp(){
   bar.innerHTML = `<button class="btn btn-primary btn-block" id="saveStockBtn">Guardar cambios en stock</button>`;
   document.body.appendChild(bar);
   document.getElementById('saveStockBtn').addEventListener('click', async ()=>{
-    stockEdit.querySelectorAll('input').forEach(inp=>{
-      const id = parseInt(inp.dataset.id);
-      const v = parseFloat(inp.value);
-      state.stock[id] = isNaN(v) ? 0 : v;
-    });
-    await pushState();
+    applyPendingEditsFromDOM();
+    const ok = await pushState();
+    if(ok) renderApp();
   });
 }
 
@@ -274,7 +288,11 @@ async function loadAndRenderApp(){
       if(!s.exists() || !s.data().json) return;
       state = ensureProducts(JSON.parse(s.data().json));
       // no re-renderizamos automáticamente para no perder ediciones a medio hacer;
-      // solo avisamos de que hay cambios más recientes en la nube.
+      // solo avisamos de que hay cambios más recientes en la nube. Si el cambio
+      // es el eco de nuestro propio guardado (recién hecho desde este mismo
+      // backoffice), no avisamos — si no, tapa el toast de "Guardado ✓" y
+      // parece que el guardado no funcionó.
+      if(Date.now() - lastPushAt < 4000) return;
       toast('Hay cambios nuevos en la nube — recarga la página para verlos');
     });
   }
