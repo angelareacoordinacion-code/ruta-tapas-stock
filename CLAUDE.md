@@ -74,26 +74,27 @@ productos, hay que editar **ambos** ficheros igual.
 - El favicon usa un SVG inline (`data:image/svg+xml,...con emoji`) en vez de
   un fichero — evita el problema de arriba para el icono de pestaña.
 
-## Pendiente / próximos pasos (por qué existe este CLAUDE.md)
+## Estado del despliegue (hecho el 2026-08-25)
 
-El usuario quiere:
-1. Subir este proyecto a un repositorio de GitHub.
-2. Conectar ese repo a Vercel (proyecto `ruta-tapas-stock`) para que cada
-   push a `main` despliegue automáticamente — sustituyendo el despliegue
-   manual usado hasta ahora.
+Completados los dos pasos que antes estaban pendientes:
+1. Repo subido a GitHub: https://github.com/angelareacoordinacion-code/ruta-tapas-stock
+   (privado, creado con `gh repo create`).
+2. Repo conectado al proyecto Vercel existente `ruta-tapas-stock` (team
+   `angelcode`) desde Project Settings → Git → Connect. Fue necesario:
+   - Conectar la cuenta de GitHub `angelareacoordinacion-code` como Login
+     Connection en Vercel (Account Settings → Login Connections → GitHub →
+     pestaña "Managed", no "Your own credentials").
+   - Instalar la GitHub App de Vercel (https://github.com/apps/vercel) con
+     acceso al repo `ruta-tapas-stock` (Only select repositories).
 
-Pasos sugeridos en Claude Code:
-```bash
-git init
-git add .
-git commit -m "Initial commit: Ruta Tapas stock app"
-gh repo create ruta-tapas-stock --private --source=. --push
-# o si no hay gh CLI: crear el repo en github.com y luego
-# git remote add origin <url> && git push -u origin main
-```
-Luego, en el dashboard de Vercel (o con `vercel link` / `vercel git connect`),
-conectar el proyecto existente `ruta-tapas-stock` (team `angelcode`) a este
-repo para que quede el deploy automático en cada push.
+A partir de ahora el deploy es automático: cada `git push` a `master`
+despliega a producción (https://ruta-tapas-stock.vercel.app). Ya no se usa
+despliegue manual, así que la limitación de "un solo binario grande por
+llamada" (ver Lecciones aprendidas) ya no aplica en la práctica.
+
+git remoto configurado: `origin` → github.com/angelareacoordinacion-code/ruta-tapas-stock.git
+git identity local: user.name `angelareacoordinacion-code`, user.email
+`320973145+angelareacoordinacion-code@users.noreply.github.com` (noreply de GitHub).
 
 ## Excel original (contexto adicional, no forma parte de este repo)
 
