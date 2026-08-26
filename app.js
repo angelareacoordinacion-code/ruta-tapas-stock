@@ -198,7 +198,7 @@ function viewEvento(){
   const el = document.createElement('div');
   el.innerHTML = `
     <h1 class="view-title">Nuevo evento</h1>
-    <p class="view-desc">Apunta el nombre de la ciudad y, para cada producto, la cantidad que te ha quedado ("vuelta") al terminar. El resto se calcula solo.</p>
+    <p class="view-desc">Apunta el nombre de la ciudad y, para cada producto, la cantidad que te ha quedado ("vuelta") al terminar. Deja el campo vacío si no quieres tocar su stock; escribe 0 si has vuelto sin nada de ese producto (así entra en la lista de la compra). El resto se calcula solo.</p>
     <div class="card">
       <div class="field-row">
         <div>
@@ -214,13 +214,16 @@ function viewEvento(){
     <div class="search-wrap">
       <input type="text" id="prodSearch" placeholder="Buscar producto…">
     </div>
+    <button class="btn btn-ghost btn-block" id="zeroRestBtn" style="margin-bottom:12px;">Poner a 0 los productos no tocados</button>
     <div class="prod-list" id="prodList"></div>
     <button class="btn btn-primary btn-block" id="saveEventBtn" style="margin-top:16px;">Guardar evento y calcular stock</button>
   `;
   el.querySelector('#evtName').addEventListener('input', e=>{ eventoName = e.target.value; });
   el.querySelector('#evtDate').addEventListener('input', e=>{ eventoFecha = e.target.value; });
   const list = el.querySelector('#prodList');
+  let currentFilter = '';
   function renderList(filter=''){
+    currentFilter = filter;
     list.innerHTML = '';
     PRODUCTS
       .filter(p => p.nombre.toLowerCase().includes(filter.toLowerCase()))
@@ -232,7 +235,7 @@ function viewEvento(){
             <div class="prod-name">${p.nombre}</div>
             <div class="prod-target">stock actual: ${fmt(state.stock[p.id])}</div>
           </div>
-          <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"
+          <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="–"
                  value="${eventoDraft[p.id] !== undefined ? eventoDraft[p.id] : ''}"
                  data-id="${p.id}">
         `;
@@ -247,6 +250,15 @@ function viewEvento(){
   }
   renderList();
   el.querySelector('#prodSearch').addEventListener('input', e => renderList(e.target.value));
+  el.querySelector('#zeroRestBtn').addEventListener('click', ()=>{
+    let n = 0;
+    PRODUCTS.forEach(p=>{
+      if(eventoDraft[p.id] === undefined){ eventoDraft[p.id] = 0; n++; }
+    });
+    if(n===0){ toast('No quedaban productos sin tocar'); return; }
+    renderList(currentFilter);
+    toast(`${n} producto${n>1?'s':''} puesto${n>1?'s':''} a 0`);
+  });
 
   el.querySelector('#saveEventBtn').addEventListener('click', async () => {
     const nombre = el.querySelector('#evtName').value.trim();
@@ -434,29 +446,44 @@ function viewCompraEspecial(){
   const el = document.createElement('div');
   el.innerHTML = `
     <h1 class="view-title">Compra especial</h1>
-    <p class="view-desc">Pedidos especiales que apuntas a mano, fuera de la lista automática de un evento. Al marcarlos como comprados y actualizar, se suman igualmente al stock total.</p>
-    <div class="card">
-      <div class="field-row">
-        <div>
-          <label for="especialProd">Producto</label>
-          <select id="especialProd"></select>
-        </div>
-        <div>
-          <label for="especialQty">Cantidad</label>
-          <input type="number" id="especialQty" inputmode="decimal" step="0.5" min="0" placeholder="0">
-        </div>
-      </div>
-      <button class="btn btn-secondary btn-block" id="addEspecialBtn" style="margin-top:12px;">+ Añadir a la lista</button>
+    <p class="view-desc">Pedidos especiales que apuntas a mano, fuera de la lista automática de un evento. Escribe la cantidad en cada producto que quieras añadir y pulsa "Añadir a la lista". Al marcarlos como comprados y actualizar, se suman igualmente al stock total.</p>
+    <div class="search-wrap">
+      <input type="text" id="especialSearch" placeholder="Buscar producto…">
     </div>
+    <div class="prod-list" id="especialProdList"></div>
+    <button class="btn btn-primary btn-block" id="addEspecialBtn" style="margin:12px 0 20px;">+ Añadir a la lista</button>
     <div id="especialList"></div>
   `;
-  const prodSelect = el.querySelector('#especialProd');
-  PRODUCTS.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p=>{
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.nombre;
-    prodSelect.appendChild(opt);
-  });
+
+  const addDraft = {}; // {productId: cantidad}
+  const prodListEl = el.querySelector('#especialProdList');
+  function renderProdList(filter=''){
+    prodListEl.innerHTML = '';
+    PRODUCTS
+      .filter(p => p.nombre.toLowerCase().includes(filter.toLowerCase()))
+      .forEach(p=>{
+        const row = document.createElement('div');
+        row.className = 'prod-row' + (addDraft[p.id]!==undefined ? ' touched' : '');
+        row.innerHTML = `
+          <div>
+            <div class="prod-name">${p.nombre}</div>
+            <div class="prod-target">stock actual: ${fmt(state.stock[p.id])}</div>
+          </div>
+          <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"
+                 value="${addDraft[p.id] !== undefined ? addDraft[p.id] : ''}"
+                 data-id="${p.id}">
+        `;
+        const input = row.querySelector('input');
+        input.addEventListener('input', e=>{
+          const v = e.target.value;
+          if(v === '') { delete addDraft[p.id]; row.classList.remove('touched'); }
+          else { addDraft[p.id] = parseFloat(v); row.classList.add('touched'); }
+        });
+        prodListEl.appendChild(row);
+      });
+  }
+  renderProdList();
+  el.querySelector('#especialSearch').addEventListener('input', e=>renderProdList(e.target.value));
 
   function persistChange(){
     saveLocalState();
@@ -533,15 +560,16 @@ function viewCompraEspecial(){
   renderList();
 
   el.querySelector('#addEspecialBtn').addEventListener('click', ()=>{
-    const productId = parseInt(prodSelect.value);
-    const qtyInput = el.querySelector('#especialQty');
-    const qty = parseFloat(qtyInput.value);
-    if(isNaN(qty) || qty<=0){ toast('Pon una cantidad válida'); return; }
-    state.compraEspecial.push({ id: Date.now(), productId, cantidad: qty, comprado:false });
-    qtyInput.value = '';
+    const entries = Object.entries(addDraft).filter(([,qty])=>qty>0);
+    if(entries.length===0){ toast('Escribe una cantidad en al menos un producto'); return; }
+    entries.forEach(([productId, cantidad], i)=>{
+      state.compraEspecial.push({ id: Date.now()+i, productId: parseInt(productId), cantidad, comprado:false });
+      delete addDraft[productId];
+    });
+    renderProdList(el.querySelector('#especialSearch').value);
     persistChange();
     renderList();
-    toast('Añadido a pedidos especiales');
+    toast(`${entries.length} producto${entries.length>1?'s':''} añadido${entries.length>1?'s':''} a pedidos especiales`);
   });
 
   return el;
