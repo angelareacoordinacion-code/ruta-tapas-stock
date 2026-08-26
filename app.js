@@ -29,11 +29,14 @@ function defaultState(){
   const products = SEED_PRODUCTS.map(p=>({...p}));
   const stock = {};
   products.forEach(p => stock[p.id] = p.stockObjetivo);
-  return { products, stock, historial: [] };
+  return { products, stock, historial: [], compraEspecial: [] };
 }
 // Rellena state.products si falta (datos antiguos) y crea entradas de stock
 // para cualquier producto nuevo que todavía no tenga una. Se llama siempre
 // que el estado se reemplaza entero (carga local, nube, tiempo real).
+// También normaliza campos añadidos más tarde (compraEspecial, y los campos
+// de checklist/edición de cada línea de compra en el historial) para que
+// datos antiguos sigan funcionando sin migración manual.
 function ensureProducts(s){
   if(!s.products || !Array.isArray(s.products) || s.products.length===0){
     s.products = SEED_PRODUCTS.map(p=>({...p}));
@@ -42,6 +45,16 @@ function ensureProducts(s){
   s.products.forEach(p=>{
     if(s.stock[p.id] === undefined) s.stock[p.id] = p.stockObjetivo;
   });
+  if(!Array.isArray(s.compraEspecial)) s.compraEspecial = [];
+  if(Array.isArray(s.historial)){
+    s.historial.forEach(evt=>{
+      (evt.items||[]).forEach(it=>{
+        if(it.compraQtyFinal === undefined) it.compraQtyFinal = it.compraNecesaria;
+        if(it.comprado === undefined) it.comprado = false;
+        if(it.aplicado === undefined) it.aplicado = false;
+      });
+    });
+  }
   return s;
 }
 function findProduct(products, id){
@@ -288,13 +301,17 @@ function viewEvento(){
 }
 
 /* ============ VISTA: LISTA DE COMPRA ============ */
+// Recuerda: el Stock Actual (pestaña Stock) es el stock TOTAL = lo que
+// volvió del evento (vuelta) + lo comprado y aplicado de esta lista +
+// lo comprado y aplicado de la Compra especial. Esta lista solo muestra
+// lo que falta para llegar al Stock Objetivo desde la vuelta.
 function viewCompra(){
   const PRODUCTS = state.products;
   const el = document.createElement('div');
   const evts = state.historial;
   el.innerHTML = `
     <h1 class="view-title">Lista de la compra</h1>
-    <p class="view-desc">Lo que hace falta comprar para volver al stock objetivo, según el evento seleccionado.</p>
+    <p class="view-desc">Lo que hace falta comprar tras el evento seleccionado para volver al stock objetivo. Marca ✓ lo que ya has comprado (puedes ajustar la cantidad si la tienda no tenía suficiente) y pulsa "Actualizar stock" para sumarlo al stock total.</p>
   `;
   if(evts.length === 0){
     el.innerHTML += `<div class="empty-state"><span class="emoji">🧾</span>Todavía no hay ningún evento guardado.<br>Ve a "Nuevo evento" para registrar el primero.</div>`;
@@ -310,62 +327,257 @@ function viewCompra(){
   });
   el.appendChild(sel);
 
-  const receiptWrap = document.createElement('div');
-  el.appendChild(receiptWrap);
+  const wrap = document.createElement('div');
+  el.appendChild(wrap);
 
-  function renderReceipt(evtId){
+  function persistChange(){
+    saveLocalState();
+    lastWriteFromThisTab = Date.now();
+    pushRemoteState(state);
+  }
+
+  function renderList(evtId){
     const evt = evts.find(e => e.id == evtId);
-    const withNeed = evt.items.filter(it => it.compraNecesaria > 0);
-    let lines = withNeed.map(it=>{
+    const items = evt.items.filter(it => it.compraNecesaria > 0);
+    let total = 0, hasUnknownPrice = false;
+    const rowsHtml = items.map((it, idx)=>{
       const p = findProduct(PRODUCTS, it.productId);
-      const cost = p.precio!=null ? p.precio*it.compraNecesaria : null;
-      return {name:p.nombre, qty:it.compraNecesaria, cost};
-    });
-    const total = lines.reduce((s,l)=> s + (l.cost||0), 0);
-    const hasUnknownPrice = lines.some(l=>l.cost===null);
-    receiptWrap.innerHTML = `
-      <div class="receipt">
+      const cost = p.precio!=null ? p.precio*it.compraQtyFinal : null;
+      if(cost!=null) total += cost; else if(it.compraQtyFinal>0) hasUnknownPrice = true;
+      return `
+        <div class="compra-row ${it.aplicado?'applied':''}">
+          <input type="checkbox" class="compra-check" data-idx="${idx}" ${it.comprado?'checked':''} ${it.aplicado?'disabled':''}>
+          <div class="compra-info">
+            <div class="compra-name">${p.nombre}</div>
+            <div class="compra-cost">${cost!=null?fmtEUR(cost):''}${it.aplicado?' · aplicado':''}</div>
+          </div>
+          <input type="number" inputmode="decimal" step="0.5" min="0" class="compra-qty" data-idx="${idx}" value="${it.compraQtyFinal}" ${it.aplicado?'disabled':''}>
+        </div>
+      `;
+    }).join('');
+    wrap.innerHTML = `
+      <div class="card">
         <div class="receipt-head">Lista de compra</div>
         <div class="receipt-sub">${evt.evento} · ${fmtDate(evt.fecha)}</div>
-        ${lines.length===0
+        ${items.length===0
           ? `<div class="receipt-empty">Nada que reponer — volviste con stock completo 🎉</div>`
-          : lines.map(l=>`<div class="receipt-line"><span>${l.name}</span><span class="qty">${fmt(l.qty)}</span></div>`).join('')
+          : `<div class="compra-list">${rowsHtml}</div>
+             <div class="receipt-total"><span>TOTAL${hasUnknownPrice?' *':''}</span><span>${fmtEUR(total)}</span></div>`
         }
-        ${lines.length>0 ? `<div class="receipt-total"><span>TOTAL${hasUnknownPrice?' *':''}</span><span>${fmtEUR(total)}</span></div>` : ''}
         ${hasUnknownPrice ? `<div class="receipt-sub" style="margin-top:6px;">* hay productos sin precio guardado, no entran en el total</div>` : ''}
       </div>
-      ${lines.length>0 ? `<button class="btn btn-secondary btn-block" id="exportCompraBtn" style="margin-top:12px;">⤓ Exportar a hoja de cálculo (CSV)</button>` : ''}
+      ${items.length>0 ? `
+        <button class="btn btn-primary btn-block" id="applyCompraBtn" style="margin-bottom:10px;">✓ Actualizar stock con esta compra</button>
+        <button class="btn btn-secondary btn-block" id="exportCompraBtn">⤓ Exportar a hoja de cálculo (CSV)</button>
+      ` : ''}
     `;
-    const exportBtn = receiptWrap.querySelector('#exportCompraBtn');
+
+    wrap.querySelectorAll('.compra-check').forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const idx = parseInt(e.target.dataset.idx);
+        items[idx].comprado = e.target.checked;
+        persistChange();
+      });
+    });
+    wrap.querySelectorAll('.compra-qty').forEach(inp=>{
+      inp.addEventListener('change', e=>{
+        const idx = parseInt(e.target.dataset.idx);
+        const v = parseFloat(e.target.value);
+        items[idx].compraQtyFinal = isNaN(v) ? 0 : Math.max(v,0);
+        persistChange();
+        renderList(evtId);
+      });
+    });
+    const applyBtn = wrap.querySelector('#applyCompraBtn');
+    if(applyBtn){
+      applyBtn.addEventListener('click', ()=>{
+        let n = 0;
+        items.forEach(it=>{
+          if(it.comprado && !it.aplicado){
+            state.stock[it.productId] = (state.stock[it.productId]||0) + it.compraQtyFinal;
+            it.aplicado = true;
+            n++;
+          }
+        });
+        if(n===0){ toast('Marca primero los productos que ya has comprado'); return; }
+        updateHeader();
+        persistChange();
+        toast(`Stock actualizado con ${n} producto${n>1?'s':''} ✓`);
+        renderList(evtId);
+      });
+    }
+    const exportBtn = wrap.querySelector('#exportCompraBtn');
     if(exportBtn){
       exportBtn.addEventListener('click', ()=>{
-        const rows = [['Producto','Cantidad a comprar','Coste estimado (EUR)']];
-        lines.forEach(l => rows.push([l.name, fmt(l.qty), l.cost!=null ? fmt(l.cost) : '']));
-        rows.push(['TOTAL','', fmt(total)]);
+        const rows = [['Producto','Cantidad a comprar','Comprado','Coste estimado (EUR)']];
+        items.forEach(it=>{
+          const p = findProduct(PRODUCTS, it.productId);
+          const cost = p.precio!=null ? p.precio*it.compraQtyFinal : null;
+          rows.push([p.nombre, fmt(it.compraQtyFinal), it.comprado?'sí':'no', cost!=null?fmt(cost):'']);
+        });
+        rows.push(['TOTAL','','', fmt(total)]);
         downloadCSV(`lista-compra-${evt.evento}-${evt.fecha}.csv`, rows);
       });
     }
   }
-  renderReceipt(sel.value);
-  sel.addEventListener('change', ()=> renderReceipt(sel.value));
+  renderList(sel.value);
+  sel.addEventListener('change', ()=> renderList(sel.value));
+  return el;
+}
+
+/* ============ VISTA: COMPRA ESPECIAL ============ */
+// Pedidos especiales apuntados a mano (fuera de la lista automática de un
+// evento). Al marcarlos como comprados y pulsar "Actualizar stock" se suman
+// también al Stock Actual (stock total), igual que la lista de compra normal.
+function viewCompraEspecial(){
+  const PRODUCTS = state.products;
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <h1 class="view-title">Compra especial</h1>
+    <p class="view-desc">Pedidos especiales que apuntas a mano, fuera de la lista automática de un evento. Al marcarlos como comprados y actualizar, se suman igualmente al stock total.</p>
+    <div class="card">
+      <div class="field-row">
+        <div>
+          <label for="especialProd">Producto</label>
+          <select id="especialProd"></select>
+        </div>
+        <div>
+          <label for="especialQty">Cantidad</label>
+          <input type="number" id="especialQty" inputmode="decimal" step="0.5" min="0" placeholder="0">
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-block" id="addEspecialBtn" style="margin-top:12px;">+ Añadir a la lista</button>
+    </div>
+    <div id="especialList"></div>
+  `;
+  const prodSelect = el.querySelector('#especialProd');
+  PRODUCTS.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.nombre;
+    prodSelect.appendChild(opt);
+  });
+
+  function persistChange(){
+    saveLocalState();
+    lastWriteFromThisTab = Date.now();
+    pushRemoteState(state);
+  }
+
+  const listWrap = el.querySelector('#especialList');
+  function renderList(){
+    const items = state.compraEspecial;
+    if(items.length===0){
+      listWrap.innerHTML = `<div class="empty-state"><span class="emoji">🛒</span>No hay pedidos especiales pendientes.</div>`;
+      return;
+    }
+    listWrap.innerHTML = `
+      <div class="card">
+        <div class="compra-list">
+          ${items.map((it,idx)=>{
+            const p = findProduct(PRODUCTS, it.productId);
+            return `
+              <div class="compra-row especial-row">
+                <input type="checkbox" class="especial-check" data-idx="${idx}" ${it.comprado?'checked':''}>
+                <div class="compra-info">
+                  <div class="compra-name">${p.nombre}</div>
+                </div>
+                <input type="number" inputmode="decimal" step="0.5" min="0" class="especial-qty" data-idx="${idx}" value="${it.cantidad}">
+                <button class="especial-del" data-idx="${idx}" title="Eliminar">✕</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="applyEspecialBtn">✓ Actualizar stock con esta compra</button>
+    `;
+    listWrap.querySelectorAll('.especial-check').forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const idx = parseInt(e.target.dataset.idx);
+        state.compraEspecial[idx].comprado = e.target.checked;
+        persistChange();
+      });
+    });
+    listWrap.querySelectorAll('.especial-qty').forEach(inp=>{
+      inp.addEventListener('change', e=>{
+        const idx = parseInt(e.target.dataset.idx);
+        const v = parseFloat(e.target.value);
+        state.compraEspecial[idx].cantidad = isNaN(v)?0:Math.max(v,0);
+        persistChange();
+      });
+    });
+    listWrap.querySelectorAll('.especial-del').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const idx = parseInt(e.currentTarget.dataset.idx);
+        state.compraEspecial.splice(idx,1);
+        persistChange();
+        renderList();
+      });
+    });
+    const applyBtn = listWrap.querySelector('#applyEspecialBtn');
+    if(applyBtn){
+      applyBtn.addEventListener('click', ()=>{
+        const checked = state.compraEspecial.filter(it=>it.comprado);
+        if(checked.length===0){ toast('Marca primero los pedidos que ya has comprado'); return; }
+        checked.forEach(it=>{
+          state.stock[it.productId] = (state.stock[it.productId]||0) + it.cantidad;
+        });
+        state.compraEspecial = state.compraEspecial.filter(it=>!it.comprado);
+        updateHeader();
+        persistChange();
+        toast(`Stock actualizado con ${checked.length} pedido${checked.length>1?'s':''} especial${checked.length>1?'es':''} ✓`);
+        renderList();
+      });
+    }
+  }
+  renderList();
+
+  el.querySelector('#addEspecialBtn').addEventListener('click', ()=>{
+    const productId = parseInt(prodSelect.value);
+    const qtyInput = el.querySelector('#especialQty');
+    const qty = parseFloat(qtyInput.value);
+    if(isNaN(qty) || qty<=0){ toast('Pon una cantidad válida'); return; }
+    state.compraEspecial.push({ id: Date.now(), productId, cantidad: qty, comprado:false });
+    qtyInput.value = '';
+    persistChange();
+    renderList();
+    toast('Añadido a pedidos especiales');
+  });
+
   return el;
 }
 
 /* ============ VISTA: STOCK ACTUAL ============ */
+// Stock Actual = stock total real (vuelta del último evento + lo comprado y
+// aplicado de la lista de compra + lo comprado y aplicado de la compra
+// especial). Stock Objetivo = el mínimo ideal que nunca debería faltar.
+// Los botones ▲▼ reordenan la lista de productos (útil para agrupar por
+// categorías); el orden se guarda y se usa en todas las pantallas.
 function viewStock(){
   const PRODUCTS = state.products;
   const el = document.createElement('div');
   el.innerHTML = `
     <h1 class="view-title">Stock actual</h1>
-    <p class="view-desc">Comparado con el stock objetivo de cada producto.</p>
+    <p class="view-desc">Stock actual = stock total (vuelta + compras ya aplicadas). Comparado con el stock objetivo, el mínimo ideal de cada producto. Usa ▲▼ para reordenar y agrupar como quieras.</p>
     <div class="search-wrap"><input type="text" id="stockSearch" placeholder="Buscar producto…"></div>
     <div class="card">
-      <div class="stock-head"><span>Producto</span><span style="text-align:right">Actual</span><span style="text-align:right">Objet.</span><span></span></div>
+      <div class="stock-head"><span>Producto</span><span style="text-align:right">Actual</span><span style="text-align:right">Objet.</span><span></span><span></span></div>
       <div id="stockRows"></div>
     </div>
     <button class="btn btn-secondary btn-block" id="exportStockBtn">⤓ Exportar a hoja de cálculo (CSV)</button>
   `;
   const rows = el.querySelector('#stockRows');
+  function moveProduct(id, dir){
+    const idx = state.products.findIndex(p=>p.id===id);
+    const newIdx = idx + dir;
+    if(idx===-1 || newIdx<0 || newIdx>=state.products.length) return;
+    const arr = state.products;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    saveLocalState();
+    lastWriteFromThisTab = Date.now();
+    pushRemoteState(state);
+    render();
+  }
   function renderRows(filter=''){
     rows.innerHTML = '';
     PRODUCTS.filter(p=>p.nombre.toLowerCase().includes(filter.toLowerCase())).forEach(p=>{
@@ -378,8 +590,17 @@ function viewStock(){
         <span class="stock-num">${fmt(actual)}</span>
         <span class="stock-num">${fmt(p.stockObjetivo)}</span>
         <span class="stock-diff ${diff<0?'diff-low':'diff-ok'}">${diff<0?'▼':'✓'}</span>
+        <span class="stock-reorder">
+          <button class="reorder-btn" data-id="${p.id}" data-dir="-1" title="Subir">▲</button>
+          <button class="reorder-btn" data-id="${p.id}" data-dir="1" title="Bajar">▼</button>
+        </span>
       `;
       rows.appendChild(row);
+    });
+    rows.querySelectorAll('.reorder-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        moveProduct(parseInt(btn.dataset.id), parseInt(btn.dataset.dir));
+      });
     });
   }
   renderRows();
@@ -524,7 +745,7 @@ function viewResumen(){
 }
 
 /* ============ ROUTER ============ */
-const VIEWS = { evento: viewEvento, compra: viewCompra, stock: viewStock, historial: viewHistorial, resumen: viewResumen };
+const VIEWS = { evento: viewEvento, compra: viewCompra, especial: viewCompraEspecial, stock: viewStock, historial: viewHistorial, resumen: viewResumen };
 
 function render(){
   const app = document.getElementById('app');

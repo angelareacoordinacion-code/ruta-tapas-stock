@@ -214,12 +214,37 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px;}
 
 .evt-select{margin-bottom:16px;}
 
+/* ---------- lista de compra (checklist con cantidad editable) ---------- */
+.compra-list{display:flex;flex-direction:column;gap:8px;}
+.compra-row{
+  display:grid;
+  grid-template-columns:22px 1fr 74px;
+  align-items:center;
+  gap:10px;
+  padding:6px 0;
+  border-bottom:1px dashed var(--line);
+}
+.compra-row:last-child{border-bottom:none;}
+.compra-row input[type=checkbox]{
+  width:20px;height:20px;accent-color:var(--teal);cursor:pointer;
+}
+.compra-row.applied{opacity:.5;}
+.compra-info{min-width:0;}
+.compra-name{font-size:13.5px;font-weight:500;line-height:1.25;}
+.compra-cost{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);margin-top:1px;}
+.compra-qty{text-align:right;padding:8px 8px;font-size:14px;}
+.especial-del{
+  background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;
+  padding:4px 6px;line-height:1;
+}
+.compra-row.especial-row{grid-template-columns:22px 1fr 60px 30px;}
+
 /* ---------- stock table ---------- */
 .stock-row{
   display:grid;
-  grid-template-columns:1fr 60px 60px 26px;
+  grid-template-columns:1fr 55px 55px 22px 42px;
   align-items:center;
-  gap:8px;
+  gap:6px;
   padding:9px 0;
   border-bottom:1px solid var(--line);
   font-size:13.5px;
@@ -231,10 +256,16 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px;}
 .diff-low{color:var(--danger);}
 .diff-ok{color:var(--ok);}
 .stock-head{
-  display:grid;grid-template-columns:1fr 60px 60px 26px;gap:8px;
+  display:grid;grid-template-columns:1fr 55px 55px 22px 42px;gap:6px;
   font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);
   padding-bottom:6px;border-bottom:2px solid var(--ink);margin-bottom:2px;
 }
+.stock-reorder{display:flex;flex-direction:column;gap:2px;}
+.reorder-btn{
+  border:none;background:var(--paper);color:var(--ink-soft);
+  font-size:9px;line-height:1;padding:3px 0;border-radius:4px;cursor:pointer;
+}
+.reorder-btn:active{transform:scale(0.9);}
 
 /* ---------- historial ---------- */
 .evt-card{
