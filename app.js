@@ -807,3 +807,49 @@ setInterval(()=>{ syncFromCloud(false); }, 15000);
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
+
+/* ============ INSTALAR EN EL MÓVIL (icono de acceso directo) ============ */
+// Muestra un botón flotante "📲" que crea un acceso directo funcional en la
+// pantalla de inicio del móvil (abre la PWA instalada, no una copia estática).
+// En Android/Chrome/Edge se puede instalar con un toque (evento
+// beforeinstallprompt). En iOS Safari no existe esa API — Apple solo permite
+// instalar manualmente vía Compartir → «Añadir a pantalla de inicio», así
+// que ahí el botón muestra esas instrucciones en vez de instalar directo.
+(function setupInstallButton(){
+  const installBtn = document.getElementById('installBtn');
+  if(!installBtn) return;
+
+  function isStandalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  if(isStandalone()) return; // ya está instalada, no hace falta el botón
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+
+  if(isIOS){
+    installBtn.style.display = 'flex';
+    const hint = document.getElementById('iosInstallHint');
+    installBtn.addEventListener('click', ()=>{ hint.style.display = 'flex'; });
+    document.getElementById('closeIosHint').addEventListener('click', ()=>{ hint.style.display = 'none'; });
+    return;
+  }
+
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    installBtn.style.display = 'flex';
+  });
+  installBtn.addEventListener('click', async ()=>{
+    if(!deferredInstallPrompt) return;
+    installBtn.style.display = 'none';
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    if(choice.outcome !== 'accepted') installBtn.style.display = 'flex';
+  });
+  window.addEventListener('appinstalled', ()=>{
+    installBtn.style.display = 'none';
+    toast('App instalada en la pantalla de inicio ✓');
+  });
+})();
