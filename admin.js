@@ -159,7 +159,7 @@ function renderApp(){
       row.querySelector('.del').addEventListener('click', ()=>{
         if(!confirm(`¿Eliminar "${p.nombre}" de la lista de productos?`)) return;
         state.products = state.products.filter(pp=>pp.id!==p.id);
-        delete state.stock[p.id];
+        deletedProductIds.add(p.id);
         renderProdRows();
       });
       prodEdit.appendChild(row);
@@ -167,6 +167,17 @@ function renderApp(){
   }
   renderProdRows();
 
+  // Solo se recuerdan los productos cuyo campo de stock se ha tocado de
+  // verdad en esta sesión del backoffice (dirtyStockIds). Antes se volcaban
+  // TODOS los campos mostrados en pantalla, aunque no se hubieran tocado —
+  // como esos campos se cargan una sola vez al abrir el backoffice, si
+  // mientras tanto la app principal guardaba un evento o aplicaba una
+  // compra, pulsar "Guardar" aquí pisaba ese stock nuevo con el número
+  // antiguo que había en pantalla. Ahora cada guardado vuelve a pedir el
+  // estado más reciente de la nube y solo aplica encima los campos que el
+  // propio backoffice ha modificado explícitamente.
+  const dirtyStockIds = new Set();
+  const deletedProductIds = new Set();
   const stockEdit = document.getElementById('stockEdit');
   state.products.forEach(p=>{
     const row = document.createElement('div');
@@ -178,15 +189,16 @@ function renderApp(){
       </div>
       <input type="number" step="0.5" data-id="${p.id}" value="${state.stock[p.id]}">
     `;
+    row.querySelector('input').addEventListener('input', e=>{
+      dirtyStockIds.add(parseInt(e.target.dataset.id));
+    });
     stockEdit.appendChild(row);
   });
 
-  // Lee TODOS los campos editables en pantalla (productos + stock actual) y
-  // los vuelca en `state`. Los dos botones de guardar ("Guardar cambios en
-  // productos" y la barra fija "Guardar cambios en stock") llaman a esto
-  // antes de subir a la nube, para que ninguno de los dos pise/descarte lo
-  // que se haya tocado en la otra sección.
-  function applyPendingEditsFromDOM(){
+  // Lee los productos (nombre/precio/stock objetivo) tal cual están en
+  // pantalla — esta sección se re-renderiza entera cada vez que cambia, así
+  // que no hay riesgo de volcar campos obsoletos.
+  function collectProductsFromDOM(){
     const rows = prodEdit.querySelectorAll('.prod-edit-row');
     const updated = [];
     rows.forEach(row=>{
@@ -198,13 +210,33 @@ function renderApp(){
       const stockObjetivo = objetivoRaw.trim() === '' ? 0 : (parseFloat(objetivoRaw) || 0);
       if(nombre) updated.push({ id, nombre, precio, stockObjetivo });
     });
-    state.products = updated;
+    return updated;
+  }
 
+  // Trae lo último de la nube y aplica encima SOLO lo que se ha tocado de
+  // verdad en esta pantalla (productos, y los campos de stock marcados como
+  // "dirty"), para no pisar cambios hechos desde la app principal mientras
+  // el backoffice estaba abierto.
+  async function saveAll(){
+    const domProducts = collectProductsFromDOM();
+    const dirtyStock = {};
     stockEdit.querySelectorAll('input').forEach(inp=>{
       const id = parseInt(inp.dataset.id);
+      if(!dirtyStockIds.has(id)) return;
       const v = parseFloat(inp.value);
-      state.stock[id] = isNaN(v) ? 0 : v;
+      dirtyStock[id] = isNaN(v) ? 0 : v;
     });
+
+    const snap = await getDoc(STATE_DOC);
+    const fresh = ensureProducts((snap.exists() && snap.data().json) ? JSON.parse(snap.data().json) : defaultState());
+
+    fresh.products = domProducts;
+    ensureProducts(fresh); // rellena el stock de cualquier producto nuevo con su stock objetivo
+    deletedProductIds.forEach(id => { delete fresh.stock[id]; });
+    Object.entries(dirtyStock).forEach(([id, v]) => { fresh.stock[id] = v; });
+
+    state = fresh;
+    return pushState();
   }
 
   document.getElementById('addProdBtn').addEventListener('click', ()=>{
@@ -224,8 +256,7 @@ function renderApp(){
   });
 
   document.getElementById('saveProdBtn').addEventListener('click', async ()=>{
-    applyPendingEditsFromDOM();
-    const ok = await pushState();
+    const ok = await saveAll();
     if(ok) renderApp();
   });
 
@@ -270,8 +301,7 @@ function renderApp(){
   bar.innerHTML = `<button class="btn btn-primary btn-block" id="saveStockBtn">Guardar cambios en stock</button>`;
   document.body.appendChild(bar);
   document.getElementById('saveStockBtn').addEventListener('click', async ()=>{
-    applyPendingEditsFromDOM();
-    const ok = await pushState();
+    const ok = await saveAll();
     if(ok) renderApp();
   });
 }
